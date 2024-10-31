@@ -10,17 +10,17 @@ const {
   deleteUser,
 } = require("../controllers/users");
 // Sign up route with image upload
-// const authenticateUser = require("../middlewares/authenticateUser"); // Middleware for authentication
+const authenticateUser = require("../middlewares/authenticateUser"); // Middleware for authentication
 
 // Login route
 router.post("/login", loginUser);
 router.post("/signup", uploadImg, addUser);
 
 // Grouping protected routes to reduce repetitive middleware calls
-router.get("/", getAllUser);
-// router.get("/:id", authenticateUser, isValidId, getUserById);
-// router.delete("/:id", authenticateUser, isValidId, deleteUser);
-// router.delete("/logout/:id", authenticateUser, isValidId, logout);
+router.get("/", authenticateUser, getAllUser);
+router.get("/:id", authenticateUser, isValidId, getUserById);
+router.delete("/:id", authenticateUser, isValidId, deleteUser);
+router.delete("/logout/:id", authenticateUser, isValidId, logout);
 
 // Error handling middleware
 router.use((err, req, res, next) => {
