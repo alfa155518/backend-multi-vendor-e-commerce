@@ -1,29 +1,31 @@
 const mongoose = require("mongoose");
 const validator = require("validator");
 const bcrypt = require("bcryptjs");
+
 const userSchema = mongoose.Schema({
   name: {
     type: String,
-    required: [true, "enter your name"],
+    required: [true, "Please enter your name"],
     maxLength: [50, "Name cannot exceed 50 characters"],
     trim: true,
   },
   email: {
     type: String,
-    required: [true, "enter your email"],
+    required: [true, "Please enter your email"],
     unique: true,
     validate: {
       validator: function (value) {
-        // Custom email validation logic
-        return validator.isEmail(value) && value.endsWith("@gmail.com"); // Example domain check
+        return validator.isEmail(value); // Allow any valid email
       },
-      message: "enter a valid email from the allowed domain @gmail.com",
+      message: "Please enter a valid email address",
     },
+    trim: true,
   },
   password: {
     type: String,
-    required: [true, "enter your password"],
+    required: [true, "Please enter your password"],
     minLength: [8, "You must enter at least 8 characters"],
+    trim: true,
   },
   photo: {
     type: Object,
@@ -31,20 +33,32 @@ const userSchema = mongoose.Schema({
       url: "https://res.cloudinary.com/duumkzqwx/image/upload/v1728893153/multi-vendor%20E-commerce/users/default_cuu653.webp",
       publicId: null,
     },
-    required: [true, "Select a photo"],
   },
   role: {
     type: String,
     enum: ["user", "admin", "vendor"],
     default: "user",
+    trim: true,
   },
 });
 
 userSchema.pre("save", async function (next) {
-  this.password = await bcrypt.hash(this.password, 12);
-  next();
+  if (!this.isModified("password")) return next();
+  try {
+    this.password = await bcrypt.hash(this.password, 12); // Consider increasing rounds if necessary
+    next();
+  } catch (error) {
+    next(error); // Handle error properly
+  }
 });
 
-const User = mongoose.model("User", userSchema);
+userSchema.methods.comparePassword = async function (candidatePassword) {
+  try {
+    return await bcrypt.compare(candidatePassword, this.password);
+  } catch (error) {
+    throw new Error("Password comparison failed");
+  }
+};
 
+const User = mongoose.model("User", userSchema);
 module.exports = User;

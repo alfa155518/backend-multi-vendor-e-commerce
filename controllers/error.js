@@ -1,17 +1,32 @@
 const globalError = async (res, error) => {
+  console.error(error); // Log the error for internal monitoring
   await res.status(500).json({
-    msg: "An unexpected error occurred on the server.",
-    error: error.stack,
+    message: "An unexpected error occurred on the server.",
   });
 };
 
-const validationErrors = async (res, error, status, msg) => {
+const validationErrors = async (res, error, status, message) => {
   const errors = Object.values(error.errors).map((err) => err.message);
+  console.error(error); // Log the error for internal monitoring
   await res.status(status).json({
-    msg,
+    message,
     errors,
-    error: error.stack,
   });
 };
 
-module.exports = { validationErrors, globalError };
+const userNotFound = async (res) => {
+  await res.status(404).json({ message: "User not found" });
+};
+
+const validToken = async (res, error) => {
+  if (error.name === "JsonWebTokenError") {
+    return res.status(401).json({ message: "Invalid token" });
+  } else if (error.name === "TokenExpiredError") {
+    return res.status(401).json({ message: "Token has expired, Login" });
+  } else {
+    console.error(error); // Log the error for internal monitoring
+    return res.status(401).json({ message: "Authentication error" });
+  }
+};
+
+module.exports = { validationErrors, globalError, userNotFound, validToken };
