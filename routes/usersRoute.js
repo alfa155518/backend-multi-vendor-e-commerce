@@ -18,11 +18,10 @@ router.post("/signup", uploadImg, addUser);
 router.post("/login", loginUser);
 
 // Grouping protected routes to reduce repetitive middleware calls
-router.use(authenticateUser);
-router.get("/", getAllUser);
-router.get("/:id", isValidId, getUserById);
-router.delete("/:id", isValidId, deleteUser);
-router.delete("/logout/:id", isValidId, logout);
+router.get("/", authenticateUser, getAllUser);
+router.get("/:id", authenticateUser, isValidId, getUserById);
+router.delete("/:id", authenticateUser, isValidId, deleteUser);
+router.delete("/logout/:id", authenticateUser, isValidId, logout);
 
 // Error handling middleware
 router.use((err, req, res, next) => {
