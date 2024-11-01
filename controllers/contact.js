@@ -3,7 +3,7 @@ const Contact = require("../models/contactModel");
 const ErrorsHandler = require("../controllers/error");
 const checkToken = require("../helpers/checkToken");
 const userMessageTimestamps = {};
-const TIME_LIMIT = 10 * 60 * 1000;
+const TIME_LIMIT = 5 * 60 * 1000;
 
 const addContactMessage = async (req, res) => {
   const token = await checkToken(req, res);
