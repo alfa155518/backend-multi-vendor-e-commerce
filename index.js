@@ -4,6 +4,7 @@ const app = express();
 const cors = require("cors");
 const rateLimit = require("express-rate-limit");
 const userRoute = require("./routes/usersRoute");
+const contactRoute = require("./routes/contactRoute");
 require("dotenv").config();
 app.use(express.json());
 
@@ -29,8 +30,11 @@ mongoose
     process.exit(1); // Exit the process if the connection fails
   });
 
-// User Routes Middleware
+// User Routes
 app.use("/api/v1/users", userRoute);
+
+// Contact Routes
+app.use("/api/v1/contact", contactRoute);
 
 const port = process.env.PORT || 4000;
 

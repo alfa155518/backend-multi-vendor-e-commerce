@@ -14,7 +14,7 @@ const authenticateUser = async (req, res, next) => {
 
   jwt.verify(token, process.env.JWT_SECRET_KEY, (err, decoded) => {
     if (err) {
-      return res.status(401).json({ message: "Unauthorized" });
+      return res.status(401).json({ message: "Unauthorized Login Or Signup" });
     }
 
     next();

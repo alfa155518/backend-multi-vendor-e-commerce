@@ -2,6 +2,7 @@ const User = require("../models/usersModel");
 const ErrorHandler = require("../controllers/error");
 const jwt = require("jsonwebtoken");
 const checkToken = require("../helpers/checkToken");
+const { cloudinaryRemoveImage } = require("../helpers/cloudinary");
 const loginUser = async (req, res) => {
   try {
     const { email, password } = await req.body;
@@ -60,6 +61,9 @@ const logout = async (req, res) => {
 
     // Directly attempt to delete the user
     const deletedUser = await User.findByIdAndDelete(decoded.id);
+
+    // Remove img from cloudarny
+    await cloudinaryRemoveImage(deletedUser.photo.publicId);
 
     if (!deletedUser) {
       return res.status(404).json({ message: "User not found" });
