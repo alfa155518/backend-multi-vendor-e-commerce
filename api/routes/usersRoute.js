@@ -1,16 +1,16 @@
 const express = require("express");
 const router = express.Router();
-const isValidId = require("../middlewares/isValidId");
-const { uploadImg } = require("../middlewares/uploadPhoto");
-const { loginUser, logout } = require("../controllers/auth");
+const isValidId = require("../../middlewares/isValidId");
+const { uploadImg } = require("../../middlewares/uploadPhoto");
+const { loginUser, logout } = require("../../controllers/auth");
 const {
   addUser,
   getAllUser,
   getUserById,
   deleteUser,
-} = require("../controllers/users");
+} = require("../../controllers/users");
 // Sign up route with image upload
-const authenticateUser = require("../middlewares/authenticateUser"); // Middleware for authentication
+const authenticateUser = require("../../middlewares/authenticateUser"); // Middleware for authentication
 
 // Login route
 router.post("/login", loginUser);
