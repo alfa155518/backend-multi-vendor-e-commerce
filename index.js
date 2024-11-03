@@ -30,6 +30,8 @@ mongoose
     process.exit(1); // Exit the process if the connection fails
   });
 
+app.get("/", (req, res) => res.send("Hello World!"));
+
 // User Routes
 app.use("/api/v1/users", userRoute);
 
