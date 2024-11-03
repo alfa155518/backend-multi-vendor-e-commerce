@@ -7,14 +7,20 @@ const userRoute = require("./routes/usersRoute");
 const contactRoute = require("./routes/contactRoute");
 require("dotenv").config();
 app.use(express.json());
-
-app.use(
-  cors({
-    origin: "*", // Update this line to allow your specific frontend origin
-    methods: ["GET", "POST", "PATCH", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
+const corsConfig = {
+  origin: "*", // Update this line to allow your specific frontend origin
+  methods: ["GET", "POST", "PATCH", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
+app.options("", cors(corsConfig));
+app.use(cors(corsConfig));
+// app.use(
+//   cors({
+//     origin: "*", // Update this line to allow your specific frontend origin
+//     methods: ["GET", "POST", "PATCH", "DELETE"],
+//     allowedHeaders: ["Content-Type", "Authorization"],
+//   })
+// );
 
 // Connect To Database with error handling
 mongoose
