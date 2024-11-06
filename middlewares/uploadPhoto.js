@@ -34,26 +34,32 @@ function fileFilter(req, file, cb) {
 }
 
 // 5) Define upload middleware
-const upload = multer({ storage, fileFilter }).single("photo");
+const upload = multer({ storage, fileFilter });
 
 // 6) Define upload img middleware
-function uploadImg(req, res, next) {
-  upload(req, res, function (err) {
-    if (err instanceof multer.MulterError) {
-      //1) A Multer error occurred when uploading.
-      return res.status(400).json({ status: "fail", message: err });
-    } else if (err) {
-      //2) An unknown error occurred when uploading.
-      return res
-        .status(500)
-        .json({
+function uploadImg(fieldName) {
+  return function (req, res, next) {
+    upload.single(fieldName)(req, res, function (err) {
+      if (err instanceof multer.MulterError) {
+        //1) A Multer error occurred when uploading.
+        return res.status(400).json({ status: "fail", message: err });
+      } else if (err) {
+        //2) An unknown error occurred when uploading.
+        console.log(err);
+        return res.status(500).json({
           status: "fail",
           message: "An unknown error occurred when uploading.",
         });
-    }
-    //3) Every Thing is fine
-    next();
-  });
+      }
+      if (!req.file) {
+        return res.status(400).send({
+          status: "error",
+          message: "Upload an image",
+        });
+      }
+      //3) Everything is fine
+      next();
+    });
+  };
 }
-
 module.exports = { uploadImg };

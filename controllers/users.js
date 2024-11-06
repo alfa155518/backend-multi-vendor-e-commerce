@@ -19,47 +19,44 @@ const addUser = async (req, res) => {
       return res.status(400).json({ message: "User already exists" });
     }
 
-    // 2) Check if image already exists
-    if (!req.file) {
-      return res.status(400).send({
-        status: "error",
-        message: "upload an image",
-      });
-    }
-
-    // 3) Create new user in the database
+    // 2) Create new user in the database
     const user = await User.create(req.body);
 
-    if (!process.env.JWT_SECRET_KEY || !process.env.JWT_EXPIRES_IN) {
-      return res.status(500).json({ message: "Server configuration error" });
-    }
-
-    // 4) Upload to Cloudinary
+    // 3) Upload to Cloudinary
     const imagePath = await path.join(
       __dirname,
       `../uploads/${req?.file?.filename}`
     );
-    const result = await cloudinaryUploadImage(imagePath);
+    const result = await cloudinaryUploadImage(imagePath, "users");
 
-    // 5) Delete Old Profile photo if exit
+    // 4) Delete Old Profile photo if exit
     if (user.photo.publicId !== null) {
       await cloudinaryRemoveImage(user.photo.publicId);
     }
-    // 6) Change the ProfilePhoto in The DB
+    // 5) Change the ProfilePhoto in The DB
     user.photo = {
       url: result.secure_url,
       publicId: result.public_id,
     };
-    // 7) Save User
+    // 6) Save User
     await user.save();
 
     res.status(201).json({ message: "User created successfully" });
 
-    // 8) Remove Img From Images Folder
+    // 9) Remove Img From Images Folder
     if (imagePath) {
       fs?.unlinkSync(imagePath);
     }
   } catch (error) {
+    const imagePath = await path.join(
+      __dirname,
+      `../uploads/${req?.file?.filename}`
+    );
+    if (imagePath && error) {
+      if (imagePath) {
+        fs?.unlinkSync(imagePath);
+      }
+    }
     if (error.name === "ValidationError") {
       return ErrorsHandler.validationErrors(res, error, 422, "fail");
     } else {

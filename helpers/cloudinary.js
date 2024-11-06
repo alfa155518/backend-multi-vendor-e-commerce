@@ -9,10 +9,10 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 // Cloudinary Upload Image
-const cloudinaryUploadImage = async (fileToUpload) => {
+const cloudinaryUploadImage = async (fileToUpload, folder) => {
   try {
     const data = await cloudinary.v2.uploader.upload(fileToUpload, {
-      folder: "multi-vendor E-commerce/users",
+      folder: `multi-vendor E-commerce/${folder}`,
       resource_type: "image",
     });
     return data;

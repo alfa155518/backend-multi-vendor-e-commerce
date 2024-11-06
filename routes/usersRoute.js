@@ -3,6 +3,7 @@ const router = express.Router();
 const isValidId = require("../middlewares/isValidId");
 const { uploadImg } = require("../middlewares/uploadPhoto");
 const { loginUser, logout } = require("../controllers/auth");
+const checkConfiguration = require("../middlewares/checkConfiguration");
 const {
   addUser,
   getAllUser,
@@ -13,8 +14,8 @@ const {
 const authenticateUser = require("../middlewares/authenticateUser"); // Middleware for authentication
 
 // Login route
-router.post("/login", loginUser);
-router.post("/signup", uploadImg, addUser);
+router.post("/login", checkConfiguration, loginUser);
+router.post("/signup", checkConfiguration, uploadImg("photo"), addUser);
 
 // Grouping protected routes to reduce repetitive middleware calls
 router.get("/", authenticateUser, getAllUser);

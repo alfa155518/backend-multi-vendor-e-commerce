@@ -29,4 +29,20 @@ const validToken = async (res, error) => {
   }
 };
 
-module.exports = { validationErrors, globalError, userNotFound, validToken };
+const duplicateKeyError = (err, res) => {
+  console.error("=>>>>", err);
+  return res.status(409).json({
+    message: `Some One use This: change your ${JSON.stringify(
+      err.keyValue.vendorName || err.keyValue.email
+    )}`,
+    error: err.keyValue, // This will show which field caused the error
+  });
+};
+
+module.exports = {
+  validationErrors,
+  globalError,
+  userNotFound,
+  validToken,
+  duplicateKeyError,
+};
