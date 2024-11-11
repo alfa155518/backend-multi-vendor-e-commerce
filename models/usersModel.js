@@ -43,14 +43,17 @@ const userSchema = mongoose.Schema({
 });
 
 userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
-  try {
-    this.password = await bcrypt.hash(this.password, 12); // Consider increasing rounds if necessary
-    next();
-  } catch (error) {
-    next(error); // Handle error properly
+  if (!this.isModified("password")) {
+    return next();
   }
 });
+userSchema.methods.hashPassword = async function (password) {
+  try {
+    this.password = await bcrypt.hash(password, 12); // Consider increasing rounds if necessary
+  } catch (error) {
+    console.log(error); // Handle error properly
+  }
+};
 
 userSchema.methods.comparePassword = async function (candidatePassword) {
   try {

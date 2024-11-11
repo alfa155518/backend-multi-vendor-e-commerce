@@ -1,6 +1,8 @@
+const fs = require("fs");
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs");
 const User = require("../models/usersModel");
 const path = require("path");
-const fs = require("fs");
 const ErrorsHandler = require("./error");
 const checkToken = require("../helpers/checkToken");
 const {
@@ -38,6 +40,7 @@ const addUser = async (req, res) => {
       url: result.secure_url,
       publicId: result.public_id,
     };
+    await user.hashPassword(user.password);
     // 6) Save User
     await user.save();
 
@@ -119,9 +122,109 @@ const deleteUser = async (req, res) => {
   }
 };
 
+const updateDetails = async (req, res) => {
+  try {
+    const token = await checkToken(req, res);
+    const { id } = jwt.verify(token, process.env.JWT_SECRET_KEY);
+    const imagePath = path.join(__dirname, `../uploads/${req?.file?.filename}`);
+    const result = await cloudinaryUploadImage(imagePath, "users");
+    const user = await User.findByIdAndUpdate(id, req.body, { new: true });
+
+    if (!user) {
+      return ErrorsHandler.userNotFound(res);
+    }
+
+    if (user.photo.publicId !== null) {
+      await cloudinaryRemoveImage(user.photo.publicId);
+    }
+
+    user.photo = {
+      url: result.secure_url,
+      publicId: result.public_id,
+    };
+
+    user.save();
+    res.status(200).json({ message: "User updated successfully", user });
+
+    if (imagePath) {
+      fs?.unlinkSync(imagePath);
+    }
+  } catch (error) {
+    const imagePath = await path.join(
+      __dirname,
+      `../uploads/${req?.file?.filename}`
+    );
+    if (imagePath || error) {
+      if (imagePath) {
+        fs?.unlinkSync(imagePath);
+      }
+    }
+    if (error.name === "ValidationError") {
+      return ErrorsHandler.validationErrors(res, error, 422, "fail");
+    } else {
+      return ErrorsHandler.globalError(res, error);
+    }
+  }
+};
+
+const updatePassword = async (req, res) => {
+  try {
+    const token = await checkToken(req, res);
+    const { currentPassword, newPassword, confirmPassword } = await req.body;
+    // Verify token and retrieve user
+    const { id } = jwt.verify(token, process.env.JWT_SECRET_KEY);
+    const user = await User.findById(id).select("+password");
+
+    if (!user) {
+      return ErrorsHandler.userNotFound(res);
+    }
+
+    // Check if the current password matches
+    const isCurrentPasswordCorrect = await bcrypt.compare(
+      currentPassword,
+      user.password
+    );
+    if (!isCurrentPasswordCorrect) {
+      return res.status(401).json({ message: "Current password is incorrect" });
+    }
+
+    // Check if new password matches confirm password
+    if (newPassword !== confirmPassword) {
+      return res
+        .status(400)
+        .json({ message: "New password does not match confirmed password" });
+    }
+
+    // Ensure the new password meets the length requirement
+    if (newPassword.length < 8) {
+      return res
+        .status(400)
+        .json({ message: "New password must be at least 8 characters long" });
+    }
+
+    // Hash the new password
+    user.password = await bcrypt.hash(newPassword, 12);
+
+    // Attempt to save the user
+    await user.save();
+
+    res.status(200).json({
+      message: "Password updated successfully",
+    });
+  } catch (error) {
+    if (error.name === "ValidationError") {
+      return ErrorsHandler.validationErrors(res, error, 422, "fail");
+    } else {
+      return ErrorsHandler.globalError(res, error);
+    }
+  }
+};
+
 module.exports = {
   addUser,
   getAllUser,
   getUserById,
   deleteUser,
+  updateDetails,
+  updatePassword,
 };
