@@ -212,6 +212,9 @@ const updatePassword = async (req, res) => {
       message: "Password updated successfully",
     });
   } catch (error) {
+    if (error.code === 11000) {
+      return res.status(400).json({ message: "Another User Use This Email" });
+    }
     if (error.name === "ValidationError") {
       return ErrorsHandler.validationErrors(res, error, 422, "fail");
     } else {

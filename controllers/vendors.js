@@ -2,12 +2,12 @@ const fs = require("fs");
 const path = require("path");
 const jwt = require("jsonwebtoken");
 const ErrorsHandler = require("../controllers/error");
+const checkToken = require("../helpers/checkToken");
 const Vendors = require("../models/vendorsModel");
 const {
   cloudinaryUploadImage,
   cloudinaryRemoveImage,
 } = require("../helpers/cloudinary");
-const checkToken = require("../helpers/checkToken");
 
 const createVendor = async (req, res) => {
   try {
@@ -45,9 +45,11 @@ const createVendor = async (req, res) => {
     // 4) Save User
     await vendor.save();
 
-    res
-      .status(201)
-      .json({ message: "vendor created successfully", vendor, token });
+    res.status(201).json({
+      message: "vendor created successfully",
+      vendor,
+      token,
+    });
 
     // 5) Remove Img From Images Folder
     if (imagePath) {
@@ -69,6 +71,23 @@ const createVendor = async (req, res) => {
     if (error.name === "MongoError" || error.code === 11000) {
       return ErrorsHandler.duplicateKeyError(error, res);
     }
+    return ErrorsHandler.globalError(res, error);
+  }
+};
+
+const getVendorById = async (req, res) => {
+  try {
+    const token = await checkToken(req, res);
+    const { id } = jwt.verify(token, process.env.JWT_SECRET_KEY);
+    const vendor = await Vendors.findById(id).populate({
+      path: "products",
+      select: "-__v",
+    });
+    if (!vendor) {
+      return res.status(404).json({ message: "Vendor not found" });
+    }
+    res.status(200).json({ vendor });
+  } catch (error) {
     return ErrorsHandler.globalError(res, error);
   }
 };
@@ -112,4 +131,5 @@ module.exports = {
   createVendor,
   allVendor,
   logoutVendor,
+  getVendorById,
 };
