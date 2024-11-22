@@ -9,6 +9,7 @@ const {
   cloudinaryRemoveImage,
 } = require("../helpers/cloudinary");
 
+// Create Vendor Account
 const createVendor = async (req, res) => {
   try {
     // Securely construct the image path
@@ -75,6 +76,7 @@ const createVendor = async (req, res) => {
   }
 };
 
+// Get Single Vendor
 const getVendorById = async (req, res) => {
   try {
     const token = await checkToken(req, res);
@@ -92,6 +94,7 @@ const getVendorById = async (req, res) => {
   }
 };
 
+// Get All Vendors
 const allVendor = async (req, res) => {
   try {
     const vendors = await Vendors.find().select("-__v");
@@ -105,6 +108,7 @@ const allVendor = async (req, res) => {
   }
 };
 
+// Logout Vendor
 const logoutVendor = async (req, res) => {
   try {
     const token = await checkToken(req, res);
@@ -127,9 +131,85 @@ const logoutVendor = async (req, res) => {
   }
 };
 
+// Update Vendor details
+const updateVendorDetails = async (req, res) => {
+  try {
+    // Validate request body for required fields
+    if (!req.body || Object.keys(req.body).length === 0) {
+      return res.status(400).json({ message: "Invalid request data" });
+    }
+
+    // Check There is Token
+    const token = await checkToken(req, res);
+    if (!token) {
+      return res.status(401).json({ message: "Unauthorized access" });
+    }
+    const { id } = jwt.verify(token, process.env.JWT_SECRET_KEY);
+
+    // Update Vendor
+    const vendor = await Vendors.findByIdAndUpdate(id, req.body, { new: true });
+    if (!vendor) {
+      return res.status(404).json({ message: "Vendor not found" });
+    }
+
+    res.status(200).json({ message: "Vendor updated successfully", vendor });
+  } catch (error) {
+    if (error.name === "ValidationError") {
+      return ErrorsHandler.validationErrors(res, error, 422, "fail");
+    }
+    if (error.name === "MongoError" || error.code === 11000) {
+      return ErrorsHandler.duplicateKeyError(error, res);
+    }
+    return ErrorsHandler.globalError(res, error);
+  }
+};
+
+// Update Store Details
+const updateStoreDetails = async (req, res) => {
+  try {
+    // Validate request body for required fields
+    if (!req.body || Object.keys(req.body).length === 0) {
+      return res.status(400).json({ message: "Invalid request data" });
+    }
+    const { storeName, description } = req.body;
+    // Check There is Token
+    const token = await checkToken(req, res);
+    if (!token) {
+      return res.status(401).json({ message: "Unauthorized access" });
+    }
+    const { id } = jwt.verify(token, process.env.JWT_SECRET_KEY);
+
+    // Check Vendor
+    const vendor = await Vendors.findById(id);
+    console.log(vendor);
+    if (!vendor) {
+      return res.status(404).json({ message: "Vendor not found" });
+    }
+
+    // Update Store Details
+    vendor.storeDetails = {
+      storeName,
+      description,
+    };
+    vendor.save();
+
+    res.status(200).json({ message: "Store updated successfully", vendor });
+  } catch (error) {
+    if (error.name === "ValidationError") {
+      return ErrorsHandler.validationErrors(res, error, 422, "fail");
+    }
+    if (error.name === "MongoError" || error.code === 11000) {
+      return ErrorsHandler.duplicateKeyError(error, res);
+    }
+    return ErrorsHandler.globalError(res, error);
+  }
+};
+
 module.exports = {
   createVendor,
   allVendor,
   logoutVendor,
   getVendorById,
+  updateVendorDetails,
+  updateStoreDetails,
 };

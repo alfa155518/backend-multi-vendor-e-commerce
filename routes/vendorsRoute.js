@@ -5,6 +5,8 @@ const {
   allVendor,
   logoutVendor,
   getVendorById,
+  updateVendorDetails,
+  updateStoreDetails,
 } = require("../controllers/vendors");
 const { uploadImg } = require("../middlewares/uploadPhoto");
 const authenticateUser = require("../middlewares/authenticateUser");
@@ -21,6 +23,8 @@ router.post(
 router.get("/", allVendor);
 router.delete("/", authenticateUser, logoutVendor);
 router.get("/:id", isValidId, getVendorById);
+router.patch("/details/:id", isValidId, updateVendorDetails);
+router.patch("/store/:id", isValidId, updateStoreDetails);
 
 // Error handling middleware
 router.use((err, req, res, next) => {

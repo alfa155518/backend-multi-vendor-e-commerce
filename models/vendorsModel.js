@@ -42,7 +42,7 @@ const vendorSchema = new mongoose.Schema({
   storeBanner: {
     type: Object,
     default: {
-      url: "https://res.cloudinary.com/duumkzqwx/image/upload/f_auto,q_auto/v1/multi-vendor%20E-commerce/vendors/default_vendor_photo",
+      url: "https://res.cloudinary.com/duumkzqwx/image/upload/v1730716317/multi-vendor%20E-commerce/stores/o2fadfx2xeio6lowesix.webp",
       publicId: null,
     },
   },
