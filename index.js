@@ -7,6 +7,7 @@ const userRoute = require("./routes/usersRoute");
 const contactRoute = require("./routes/contactRoute");
 const vendorRoute = require("./routes/vendorsRoute");
 const productRoute = require("./routes/productRoute");
+const reviewRoute = require("./routes/reviewRoute");
 // const bodyParser = require("body-parser");
 require("dotenv").config();
 
@@ -46,6 +47,9 @@ app.use("/api/v1/vendors", vendorRoute);
 
 // Product Routes
 app.use("/api/v1/products", productRoute);
+
+// Reviews Routes
+app.use("/api/v1/reviews", reviewRoute);
 
 const port = process.env.PORT || 4000;
 
