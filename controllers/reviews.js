@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const Reviews = require("../models/reviewsModel");
+const Vendor = require("../models/vendorsModel");
 const Product = require("../models/productsModel");
 const checkToken = require("../helpers/checkToken");
 const ErrorsHandler = require("../controllers/error");
@@ -8,12 +9,14 @@ const User = require("../models/usersModel");
 // add Review
 const postReview = async (req, res) => {
   try {
+    // Verify token and extract user ID
     const decoded = await checkToken(req, res);
-
     const { id } = jwt.verify(decoded, process.env.JWT_SECRET_KEY);
 
+    // Create a new review
     const review = await Reviews.create({ ...req.body, reviewer: id });
 
+    // Add review to the product's reviews array
     const product = await Product.findByIdAndUpdate(
       req.body.product,
       { $push: { reviews: review._id } },
@@ -24,11 +27,32 @@ const postReview = async (req, res) => {
       return res.status(404).json({ message: "Product not found" });
     }
 
-    res.status(201).json({
-      message: "Review created successfully",
+    // Retrieve the vendor associated with the product
+    const vendor = await Vendor.findById(product.vendor[0]);
+    if (!vendor) {
+      return res.status(404).json({ message: "Vendor not found" });
+    }
+
+    // Update Vendor Reviews Number
+    const updatedVendor = await Vendor.findByIdAndUpdate(
+      vendor._id,
+      { $inc: { "performanceMetrics.reviews": 1 } },
+      { new: true }
+    );
+
+    if (!updatedVendor) {
+      return res.status(404).json({ message: "Vendor update failed" });
+    }
+
+    // Send success response
+    res.status(200).json({
+      message: "Review added successfully",
       review,
     });
   } catch (error) {
+    console.error("Error posting review:", error);
+
+    // Handle errors
     if (error.name === "ValidationError") {
       return ErrorsHandler.validationErrors(res, error, 422, "fail");
     } else {
@@ -87,9 +111,14 @@ const likeAction = async (req, res) => {
         .json({ message: "You already Reacted on this review" });
     }
 
-    review.fans.push(user._id);
-    review.like++;
-    await review.save();
+    await Reviews.findByIdAndUpdate(
+      review._id,
+      {
+        $inc: { like: 1 },
+        $push: { fans: user._id },
+      },
+      { new: true }
+    );
 
     res.status(200).json({ message: "Thanks For Your opinion" });
   } catch (error) {
@@ -126,9 +155,14 @@ const disLikeAction = async (req, res) => {
         .json({ message: "You already Reacted on this review" });
     }
 
-    await review.fans.push(user._id);
-    review.dislike++;
-    await review.save();
+    await Reviews.findByIdAndUpdate(
+      review._id,
+      {
+        $inc: { dislike: 1 },
+        $push: { fans: user._id },
+      },
+      { new: true }
+    );
 
     res.status(200).json({ message: "Thanks For Your opinion" });
   } catch (error) {
