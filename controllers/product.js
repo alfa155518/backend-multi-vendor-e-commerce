@@ -15,8 +15,9 @@ const checkIsVendor = require("../helpers/checkIsVendor");
 const createProduct = async (req, res) => {
   try {
     const token = await checkToken(req, res);
-    const { id } = jwt.verify(token, process.env.JWT_SECRET_KEY);
+    const {id} = await jwt.verify(token, process.env.JWT_SECRET_KEY);
     const vendor = await Vendor.findById(id);
+    console.log(vendor);
 
     if (!vendor) {
       return res
@@ -41,9 +42,9 @@ const createProduct = async (req, res) => {
     };
 
     // Add the new product ID to the vendor's products array
-    vendor.products.push(newProduct._id);
+    await vendor.products.push(newProduct._id);
     // Add the vendor ID to the vendor array
-    newProduct.vendor.push(vendor._id);
+    await newProduct.vendor.push(vendor._id);
 
     // Use Promise.all for concurrent saves
     await Promise.all([vendor.save(), newProduct.save()]);
