@@ -16,6 +16,13 @@ const createVendor = async (req, res) => {
     const sanitizedFileName = path.basename(req?.file?.filename);
     const imagePath = path.join(__dirname, `../uploads/${sanitizedFileName}`);
 
+    if (!req.file) {
+      return res.status(400).send({
+        status: "error",
+        message: "Please upload an image or ensure the body is not empty.",
+      });
+    }
+
     // 1) Create Vendor
     const vendor = await Vendors.create(req.body);
 

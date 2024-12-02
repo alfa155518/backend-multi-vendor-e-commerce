@@ -15,9 +15,15 @@ const checkIsVendor = require("../helpers/checkIsVendor");
 const createProduct = async (req, res) => {
   try {
     const token = await checkToken(req, res);
-    const {id} = await jwt.verify(token, process.env.JWT_SECRET_KEY);
+    const { id } = await jwt.verify(token, process.env.JWT_SECRET_KEY);
     const vendor = await Vendor.findById(id);
-    console.log(vendor);
+
+    if (!req.file) {
+      return res.status(400).send({
+        status: "error",
+        message: "Please upload an image or ensure the body is not empty.",
+      });
+    }
 
     if (!vendor) {
       return res
@@ -25,21 +31,26 @@ const createProduct = async (req, res) => {
         .json({ message: "Vendor not found OR Create Vendor Account" });
     }
 
-    // Sanitize filename
-    const sanitizedFilename = path.basename(req.file.filename);
-    const imagePath = path.join(__dirname, `../uploads/${sanitizedFilename}`);
+    // Sanitize filename and check if file exists
+    let imagePath;
+    if (req.file) {
+      const sanitizedFilename = path.basename(req.file.filename);
+      imagePath = path.join(__dirname, `../uploads/${sanitizedFilename}`);
+    }
 
     const newProduct = await Product.create(req.body);
 
-    // Upload Img To Cloudinary
-    const result = await cloudinaryUploadImage(imagePath, "all products");
-    if (newProduct.photo?.publicId) {
-      await cloudinaryRemoveImage(newProduct.photo.publicId);
+    // Upload Img To Cloudinary only if file exists
+    if (req.file) {
+      const result = await cloudinaryUploadImage(imagePath, "all products");
+      if (newProduct.photo?.publicId) {
+        await cloudinaryRemoveImage(newProduct.photo.publicId);
+      }
+      newProduct.photo = {
+        url: result.secure_url,
+        publicId: result.public_id,
+      };
     }
-    newProduct.photo = {
-      url: result.secure_url,
-      publicId: result.public_id,
-    };
 
     // Add the new product ID to the vendor's products array
     await vendor.products.push(newProduct._id);
@@ -56,7 +67,9 @@ const createProduct = async (req, res) => {
 
     // Asynchronously delete the file if it exists
     try {
-      await fs.unlink(imagePath);
+      if (req.file) {
+        await fs.unlink(imagePath);
+      }
     } catch (err) {
       console.error("Error deleting file:", err);
     }
@@ -66,7 +79,9 @@ const createProduct = async (req, res) => {
 
     // Asynchronously delete the file if it exists
     try {
-      await fs.unlink(imagePath);
+      if (req.file) {
+        await fs.unlink(imagePath);
+      }
     } catch (err) {
       console.error("Error deleting file during error handling:", err);
     }
@@ -120,8 +135,7 @@ const deleteProduct = async (req, res) => {
 
 const getProductById = async (req, res) => {
   try {
-    const { productId } = req.params;
-
+    const { productId } = await req.params;
     // Check if the productId is a valid ObjectId
     if (!isValidObjectId(productId)) {
       return res.status(400).json({ message: "Invalid product ID format" });
@@ -194,9 +208,129 @@ const getAllProduct = async (req, res) => {
   }
 };
 
+const updateProduct = async (req, res) => {
+  try {
+    const { productId } = await req.params;
+
+    const { name, description, price, stock } = await req.body;
+
+    // Parse `photo` if it is a JSON string
+    if (typeof req.body.photo === "string") {
+      req.body.photo = JSON.parse(req.body.photo);
+    }
+
+    // Check is Valid Id
+    if (!isValidObjectId(productId)) {
+      return res.status(400).json({ message: "Invalid product ID format" });
+    }
+    const decoded = await checkToken(req, res);
+
+    const { id } = await jwt.verify(decoded, process.env.JWT_SECRET_KEY);
+
+    const vendor = await Vendor.findById(id);
+
+    if (!vendor) {
+      return res
+        .status(404)
+        .json({ message: "Vendor not found OR Create Vendor Account" });
+    }
+
+    // Check Product id is exit in vendor products
+    const productExists = await Product.exists({ _id: productId, vendor: id });
+    if (!productExists) {
+      return res
+        .status(404)
+        .json({ message: "Product not found in your products" });
+    }
+    if (!req.file) {
+      if (!req.body.photo) {
+        return res.status(400).send({
+          status: "error",
+          message: "Please upload an image or ensure the body is not empty.",
+        });
+      }
+    }
+
+    // Sanitize filename and check if file exists
+    let imagePath;
+    if (req.file) {
+      const sanitizedFilename = path.basename(req.file.filename);
+      imagePath = path.join(__dirname, `../uploads/${sanitizedFilename}`);
+    }
+
+    // Update the product
+    const updatedProduct = await Product.findByIdAndUpdate(
+      productId,
+      {
+        name,
+        description,
+        price,
+        stock,
+        photo: req.body.photo, // Ensure `photo` is an object with `url` and `publicId`
+      },
+      { new: true }
+    );
+
+    if (!updatedProduct) {
+      return res.status(404).json({ message: "Product update failed" });
+    }
+
+    // Upload Img To Cloudinary only if file exists
+    if (req.file) {
+      const result = await cloudinaryUploadImage(imagePath, "all products");
+      if (updatedProduct.photo?.publicId) {
+        await cloudinaryRemoveImage(updatedProduct.photo.publicId);
+      }
+      updatedProduct.photo = {
+        url: result.secure_url,
+        publicId: result.public_id,
+      };
+    }
+
+    // Save the updated product
+    await updatedProduct.save();
+
+    res.status(200).json({
+      message: "Product updated successfully",
+      updatedProduct,
+    });
+
+    // Asynchronously delete the file if it exists
+    try {
+      if (req.file) {
+        await fs.unlink(imagePath);
+      }
+    } catch (err) {
+      console.error("Error deleting file:", err);
+    }
+  } catch (error) {
+    const sanitizedFilename = path.basename(req?.file?.filename);
+    const imagePath = path.join(__dirname, `../uploads/${sanitizedFilename}`);
+
+    // Asynchronously delete the file if it exists
+    try {
+      if (req.file) {
+        await fs.unlink(imagePath);
+      }
+    } catch (err) {
+      console.error("Error deleting file during error handling:", err);
+    }
+
+    if (error.name === "ValidationError") {
+      return ErrorsHandler.validationErrors(res, error, 422, "fail");
+    } else {
+      return ErrorsHandler.globalError(res, error);
+    }
+  }
+};
+
+//  "url":"https://res.cloudinary.com/duumkzqwx/image/upload/f_auto,q_auto/v1/multi-vendor%20E-commerce/all%20products/oml2cdwc9f3zapdvddth",
+//     "publicId":"multi-vendor E-commerce/all products/oml2cdwc9f3zapdvddth"
+
 module.exports = {
   createProduct,
   deleteProduct,
   getProductById,
   getAllProduct,
+  updateProduct,
 };

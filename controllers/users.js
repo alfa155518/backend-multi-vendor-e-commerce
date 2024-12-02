@@ -21,6 +21,13 @@ const addUser = async (req, res) => {
       return res.status(400).json({ message: "User already exists" });
     }
 
+    if (!req.file) {
+      return res.status(400).send({
+        status: "error",
+        message: "Please upload an image or ensure the body is not empty.",
+      });
+    }
+
     // 2) Create new user in the database
     const user = await User.create(req.body);
 
@@ -126,39 +133,69 @@ const updateDetails = async (req, res) => {
   try {
     const token = await checkToken(req, res);
     const { id } = jwt.verify(token, process.env.JWT_SECRET_KEY);
-    const imagePath = path.join(__dirname, `../uploads/${req?.file?.filename}`);
-    const result = await cloudinaryUploadImage(imagePath, "users");
-    const user = await User.findByIdAndUpdate(id, req.body, { new: true });
 
+    // Parse `photo` if it is a JSON string
+    if (typeof req.body.photo === "string") {
+      req.body.photo = JSON.parse(req.body.photo);
+    }
+
+    const user = await User.findById(id);
     if (!user) {
       return ErrorsHandler.userNotFound(res);
     }
 
-    if (user.photo.publicId !== null) {
-      await cloudinaryRemoveImage(user.photo.publicId);
-    }
+    let imagePath;
+    if (req.file) {
+      const sanitizedFilename = path.basename(req.file.filename);
+      imagePath = path.join(__dirname, `../uploads/${sanitizedFilename}`);
 
-    user.photo = {
-      url: result.secure_url,
-      publicId: result.public_id,
-    };
+      // Upload new image to Cloudinary
+      const result = await cloudinaryUploadImage(imagePath, "users");
 
-    user.save();
-    res.status(200).json({ message: "User updated successfully", user });
-
-    if (imagePath) {
-      fs?.unlinkSync(imagePath);
-    }
-  } catch (error) {
-    const imagePath = await path.join(
-      __dirname,
-      `../uploads/${req?.file?.filename}`
-    );
-    if (imagePath || error) {
-      if (imagePath) {
-        fs?.unlinkSync(imagePath);
+      // Remove old photo from Cloudinary if exists
+      if (user.photo && user.photo.publicId) {
+        await cloudinaryRemoveImage(user.photo.publicId);
       }
+
+      // Update user photo with the new image
+      user.photo = {
+        url: result.secure_url,
+        publicId: result.public_id,
+      };
+
+      // Remove the file from the server after uploading
+      fs.unlinkSync(imagePath);
+    } else if (!req.body.photo) {
+      // Ensure the user has a valid photo if none is uploaded
+      return res.status(400).send({
+        status: "error",
+        message:
+          "Please upload an image or ensure the body contains photo data.",
+      });
     }
+
+    // Update other fields (e.g., name, email, role)
+    Object.keys(req.body).forEach((key) => {
+      if (key !== "photo") {
+        user[key] = req.body[key];
+      }
+    });
+
+    // Save updated user details
+    await user.save();
+
+    res.status(200).json({
+      message: "User updated successfully",
+      user,
+    });
+  } catch (error) {
+    if (req.file) {
+      // Cleanup uploaded file in case of an error
+      const imagePath = path.join(__dirname, `../uploads/${req.file.filename}`);
+      fs.unlinkSync(imagePath);
+    }
+
+    // Handle validation and global errors
     if (error.name === "ValidationError") {
       return ErrorsHandler.validationErrors(res, error, 422, "fail");
     } else {
@@ -166,7 +203,6 @@ const updateDetails = async (req, res) => {
     }
   }
 };
-
 const updatePassword = async (req, res) => {
   try {
     const token = await checkToken(req, res);

@@ -51,13 +51,6 @@ function uploadImg(fieldName) {
           message: "An unknown error occurred when uploading.",
         });
       }
-      if (!req.file) {
-        return res.status(400).send({
-          status: "error",
-          message: "Upload an image",
-        });
-      }
-      //3) Everything is fine
       next();
     });
   };
