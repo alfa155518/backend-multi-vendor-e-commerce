@@ -40,6 +40,25 @@ const userSchema = mongoose.Schema({
     default: "user",
     trim: true,
   },
+  cart: [
+    {
+      productId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Product",
+      },
+      quantity: {
+        type: Number,
+        default: 1,
+        min: 1, // Ensure quantity is at least 1
+      },
+    },
+  ],
+  orders: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Product",
+    },
+  ],
 });
 
 userSchema.pre("save", async function (next) {

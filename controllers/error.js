@@ -18,6 +18,10 @@ const userNotFound = async (res) => {
   await res.status(404).json({ message: "User not found" });
 };
 
+const productNotFound = async (res) => {
+  await res.status(404).json({ message: "product not found" });
+};
+
 const validToken = async (res, error) => {
   if (error.name === "JsonWebTokenError") {
     return res.status(401).json({ message: "Invalid token" });
@@ -43,6 +47,7 @@ module.exports = {
   validationErrors,
   globalError,
   userNotFound,
+  productNotFound,
   validToken,
   duplicateKeyError,
 };
