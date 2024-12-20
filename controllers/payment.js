@@ -56,7 +56,7 @@ const session = async (req, res) => {
       mode: "payment",
       line_items: lineItems,
       success_url: `${process.env.APP_URL}/payment/success`,
-      cancel_url: `${APP_URL}/payment/fail`,
+      cancel_url: `${process.env.APP_URL}/payment/fail`,
     });
 
     if (sessionData) {
