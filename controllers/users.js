@@ -77,7 +77,8 @@ const addUser = async (req, res) => {
 
 const getAllUser = async (_, res) => {
   try {
-    const allUser = await User.find().select("name email role photo");
+    // const allUser = await User.find().select("name email role photo");
+    const allUser = await User.find();;
     if (!allUser || allUser.length === 0) {
       return res.status(404).json({ message: "No users found" });
     }

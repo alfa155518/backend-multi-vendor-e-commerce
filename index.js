@@ -9,6 +9,7 @@ const vendorRoute = require("./routes/vendorsRoute");
 const productRoute = require("./routes/productRoute");
 const cartRoute = require("./routes/cartRoute");
 const reviewRoute = require("./routes/reviewRoute");
+const paymentRoute = require("./routes/paymentRoute");
 // const bodyParser = require("body-parser");
 require("dotenv").config();
 
@@ -54,6 +55,9 @@ app.use("/api/v1/cart", cartRoute);
 
 // Reviews Routes
 app.use("/api/v1/reviews", reviewRoute);
+
+// Payment Routes
+app.use("/api/v1/payment", paymentRoute);
 
 const port = process.env.PORT || 4000;
 

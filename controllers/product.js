@@ -324,9 +324,6 @@ const updateProduct = async (req, res) => {
   }
 };
 
-//  "url":"https://res.cloudinary.com/duumkzqwx/image/upload/f_auto,q_auto/v1/multi-vendor%20E-commerce/all%20products/oml2cdwc9f3zapdvddth",
-//     "publicId":"multi-vendor E-commerce/all products/oml2cdwc9f3zapdvddth"
-
 module.exports = {
   createProduct,
   deleteProduct,

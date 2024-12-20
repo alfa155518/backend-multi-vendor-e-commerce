@@ -169,6 +169,8 @@ const updateProductQuantityInCart = async (req, res) => {
       return ErrorHandler.productNotFound(res);
     }
 
+
+
     // Update the quantity of the product in the cart
     user.cart[productIndex].quantity = quantity;
     await user.save();
